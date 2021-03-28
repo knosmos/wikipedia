@@ -112,7 +112,7 @@ def drawQuery():
     sys.stdout.flush()
 
 def getPage():
-    global query_str, page, rawpage
+    global query_str, page, rawpage, offset
     try:
         rawpage = wikipedia.page(query_str,auto_suggest=False)
         rawpage = colors.WARNING+rawpage.title.upper()+colors.ENDC+"\n"+rawpage.content # title (in yellow) and content
@@ -128,6 +128,7 @@ def getPage():
     
     # Textwrap lines
     page = makePage(rawpage)
+    offset = 0
     redraw()
 
 def makePage(page):
