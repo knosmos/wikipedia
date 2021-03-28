@@ -8,8 +8,12 @@ import keyboard # used to handle keyboard input
 import wikipedia # retrieves data from wikipedia
 import time # framerate
 import textwrap # split text into equal-length lines
-import ctypes # for added pain (and to move the cursor)
-from ctypes import c_long, c_wchar_p, c_ulong, c_void_p
+
+cursor_move = False # Can we use ctypes to move the cursor?
+if os.name == "nt":
+    import ctypes # for added pain (and to move the cursor)
+    from ctypes import c_long, c_wchar_p, c_ulong, c_void_p
+    cursor_move = True
 
 # Terminal colors
 class colors:
@@ -47,7 +51,8 @@ def erase(x1,x2,y1,y2): # Erases a specific rectangle of the window
         for y in range(y1,y2+1):
             write(x,y," ")
 
-gHandle = ctypes.windll.kernel32.GetStdHandle(c_long(-11))
+if cursor_move:
+    gHandle = ctypes.windll.kernel32.GetStdHandle(c_long(-11))
 sx, sy = (0,0)
 old_query_str = "query string"
 query_str = ""
@@ -107,8 +112,9 @@ def drawQuery():
     old_query_str = query_str
     # move cursor
     # https://stackoverflow.com/questions/27612545/how-to-change-the-location-of-the-pointer-in-python/27612978#27612978
-    value = len(query_str) + 1 + pad_l + ((1+pad_t) << 16)
-    ctypes.windll.kernel32.SetConsoleCursorPosition(gHandle, c_ulong(value))
+    if cursor_move:
+        value = len(query_str) + 1 + pad_l + ((1+pad_t) << 16)
+        ctypes.windll.kernel32.SetConsoleCursorPosition(gHandle, c_ulong(value))
     sys.stdout.flush()
 
 def getPage():
