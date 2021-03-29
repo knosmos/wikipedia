@@ -10,6 +10,7 @@ import keyboard # used to handle keyboard input
 import wikipedia # retrieves data from wikipedia
 import time # framerate
 import textwrap # split text into equal-length lines
+import webbrowser # open wikipedia articles in browser
 
 cursor_move = False # Can we use ctypes to move the cursor?
 if os.name == "nt":
@@ -61,14 +62,16 @@ if cursor_move:
     gHandle = ctypes.windll.kernel32.GetStdHandle(c_long(-11))
 sx, sy = (0,0)
 old_query_str = "query string"
-query_str = ""
+queryStr = ""
 page = []
 rawpage = ""
 offset = 0 # how much scroll
+quitApp = False
+mostRecentQuery = ""
 
 # padding
 pad_t = 1
-pad_b = 0
+pad_b = 1
 pad_l = 0
 pad_r = 0
 
@@ -88,7 +91,7 @@ def drawSplash():
         time.sleep(0.05)
 
 def drawWindow(sx,sy):
-    global query_str
+    global queryStr
     # Clear window
     clear()
 
@@ -97,23 +100,27 @@ def drawWindow(sx,sy):
 
     # Draw box
     drawHorizontal(1+pad_t,1+pad_l,sx+1-pad_r,"╭","─","╮")
-    drawHorizontal(sy,1+pad_l,sx+1-pad_r,"╰","─","╯")
-    drawVertical(1+pad_l,pad_t,sy,"╭","│","╰")
-    drawVertical(sx-pad_r,pad_t,sy,"╮","│","╯")
+    drawHorizontal(sy-pad_b,1+pad_l,sx+1-pad_r,"╰","─","╯")
+    drawVertical(1+pad_l,pad_t,sy-pad_b,"╭","│","╰")
+    drawVertical(sx-pad_r,pad_t,sy-pad_b,"╮","│","╯")
 
     # Draw input/text separation line
     drawHorizontal(3+pad_t,1+pad_l,sx+1-pad_r,"├","─","┤")
     sys.stdout.flush()
 
+    # Draw "tab" and "exit" text
+    if page: write(sx-pad_r-22,sy,"[tab]: open in browser")
+    write(pad_l+1,sy,"[ctrl-c]: quit")
+
 def drawQuery():
-    global query_str, old_query_str
+    global queryStr, old_query_str
     erase(2+pad_l,sx-1-pad_r,2+pad_t,2+pad_t)
-    write(2+pad_l,2+pad_t,query_str,colors.OKCYAN)
-    old_query_str = query_str
+    write(2+pad_l,2+pad_t,queryStr,colors.OKCYAN)
+    old_query_str = queryStr
     # move cursor
     # https://stackoverflow.com/questions/27612545/how-to-change-the-location-of-the-pointer-in-python/27612978#27612978
     if cursor_move:
-        value = len(query_str) + 1 + pad_l + ((1+pad_t) << 16)
+        value = len(queryStr) + 1 + pad_l + ((1+pad_t) << 16)
         ctypes.windll.kernel32.SetConsoleCursorPosition(gHandle, c_ulong(value))
     sys.stdout.flush()
 
@@ -127,45 +134,48 @@ def redraw():
 ''' QUERY '''
 
 def keyInput(keyObj):
-    global query_str, offset
+    global queryStr, offset, quitApp, mostRecentQuery
     key = keyObj.name # get unicode representation of keyObj
     if key == "space": key = " "
-    if key == "backspace": query_str = query_str[:-1]
+    if key == "backspace": queryStr = queryStr[:-1]
     if len(key) == 1: # check if it is actually a character and not something like [shift]
-        query_str += key
+        queryStr += key
     if key == "enter":
-        if len(query_str): # Check if there is actually a query
+        if len(queryStr): # Check if there is actually a query
             getPage() # Send request to wikipedia
-            query_str = ""
-    if key == "escape":
-        clear()
-        sys.exit()
+            mostRecentQuery = queryStr
+            queryStr = ""
+    if key == "esc":
+        quitApp = True
     if key == "up":
         offset = max(0,offset-1)
         writePage()
     if key == "down":
-        offset = min(len(page),offset+1)
+        offset += 1
         writePage()
+    if key == "tab":
+        if page:
+            webbrowser.open("https://wikipedia.org/wiki/"+mostRecentQuery)
     drawQuery()
 
 keyboard.on_press(keyInput)
 
 def getPage():
-    global query_str, page, rawpage, offset
+    global queryStr, page, rawpage, offset
     # Loading screen
     offset = 0
-    erase(2+pad_l,sx-1-pad_r,4+pad_t,sy-1)
+    erase(2+pad_l,sx-1-pad_r,4+pad_t,sy-1-pad_b)
     page = makePage("Loading...")
     writePage()
 
     # Send query
     try:
-        rawpage = wikipedia.page(query_str,auto_suggest=False)
+        rawpage = wikipedia.page(queryStr,auto_suggest=False)
         rawpage = colors.WARNING+rawpage.title.upper()+colors.ENDC+"\n"+rawpage.content # title (in yellow) and content
     except wikipedia.exceptions.DisambiguationError as e: # Show disabiguation page
-        rawpage = colors.WARNING+query_str+" may refer to:"+colors.ENDC+"\n"+"\n".join(e.options)
+        rawpage = colors.WARNING+queryStr+" may refer to:"+colors.ENDC+"\n"+"\n".join(e.options)
     except wikipedia.exceptions.PageError:
-        rawpage = "No pages found for '%s'. Try a different query." %(query_str)
+        rawpage = "No pages found for '%s'. Try a different query." %(queryStr)
     
     # Add color to headings
     rawpage = rawpage.replace(" ==="," ==="+colors.ENDC)
@@ -174,7 +184,7 @@ def getPage():
     rawpage = rawpage.replace("== ",colors.FAIL+"== ")
     
     # Textwrap lines
-    erase(2+pad_l,sx-1-pad_r,4+pad_t,sy-1)
+    erase(2+pad_l,sx-1-pad_r,4+pad_t,sy-1-pad_b)
     page = makePage(rawpage)
     offset = 0
     redraw()
@@ -211,8 +221,8 @@ def writePage():
 '''
 def writePage():
     global page, sx, offset
-    erase(2+pad_l,sx-1-pad_r,4+pad_t,sy-1)
-    for i in range(offset,min(len(page),sy-4+offset-pad_t)):
+    erase(2+pad_l,sx-1-pad_r,4+pad_t,sy-1-pad_b)
+    for i in range(offset,min(len(page),sy-4+offset-pad_t-pad_b)):
         write(2+pad_l,4+i-offset+pad_t,page[i])
     sys.stdout.flush()
 
@@ -240,6 +250,9 @@ def main():
                     pad_l = 1
                 redraw()
             time.sleep(0.05)
+            if quitApp:
+                clear()
+                sys.exit()
     except KeyboardInterrupt:
         clear() # Clear the screen before we exit
         sys.exit()
