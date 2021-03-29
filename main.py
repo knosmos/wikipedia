@@ -137,6 +137,9 @@ def keyInput(keyObj):
         if len(query_str): # Check if there is actually a query
             getPage() # Send request to wikipedia
             query_str = ""
+    if key == "escape":
+        clear()
+        sys.exit()
     if key == "up":
         offset = max(0,offset-1)
         writePage()
@@ -151,6 +154,7 @@ def getPage():
     global query_str, page, rawpage, offset
     # Loading screen
     offset = 0
+    erase(2+pad_l,sx-1-pad_r,4+pad_t,sy-1)
     page = makePage("Loading...")
     writePage()
 
@@ -198,7 +202,9 @@ def writePage():
         # to the end of each line to clear out any text that might have
         # been there before. This significantly reduces flickering.
         write(2+pad_l,4+i-offset+pad_t,page[i]+" "*(linew-len(page[i])))
-    erase(2+pad_l,sx-2-pad_r,4+pad_t+len(page)-offset,sy-1)
+    #erase(2+pad_l,sx-2-pad_r,4+pad_t+len(page)-offset,sy-1)
+    if len(page)-offset < sy-4:
+        write(2+pad_l,sy-1," "*linew)
     sys.stdout.flush()
 
 ''' MAIN '''
