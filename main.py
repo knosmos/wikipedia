@@ -109,8 +109,16 @@ def drawWindow(sx,sy):
     sys.stdout.flush()
 
     # Draw "tab" and "exit" text
-    if page: write(sx-pad_r-22,sy,"[tab]: open in browser")
-    write(pad_l+1,sy,"[ctrl-c]: quit")
+    if page:
+        write(pad_l+1,sy,"[ctrl-c]: quit | [tab]: open in browser")
+    else:
+        write(pad_l+1,sy,"[ctrl-c]: quit")
+
+def updateRowCounter():
+    if mostRecentQuery:
+        end = min(len(page),offset+sy+2)
+        lineCounter = "%d-%d of %d rows" %(offset,end,len(page))
+        write(sx-pad_r-len(lineCounter),sy,lineCounter)
 
 def drawQuery():
     global queryStr, old_query_str
@@ -142,6 +150,7 @@ def keyInput(keyObj):
         queryStr += key
     if key == "enter":
         if len(queryStr): # Check if there is actually a query
+            queryStr = " ".join([i.capitalize() for i in queryStr.split()]) # capitalize, because some queries don't work when lowercase
             getPage() # Send request to wikipedia
             mostRecentQuery = queryStr
             queryStr = ""
@@ -151,7 +160,8 @@ def keyInput(keyObj):
         offset = max(0,offset-1)
         writePage()
     if key == "down":
-        offset += 1
+        if len(page)-sy-pad_t-pad_b > offset:
+            offset += 1
         writePage()
     if key == "tab":
         if page:
@@ -204,26 +214,18 @@ def makePage(page):
             newpage.append(line)
     return newpage
 
-# experimental version. sometimes breaks.
-'''
 def writePage():
     global page, sx, offset
     linew = sx-pad_r-pad_l-2 # Width of the drawing area
-    for i in range(offset,min(len(page),sy-4+offset-pad_t)):
-        # Instead of clearing the canvas and redrawing, we add spaces
-        # to the end of each line to clear out any text that might have
-        # been there before. This significantly reduces flickering.
-        write(2+pad_l,4+i-offset+pad_t,page[i]+" "*(linew-len(page[i])))
-    #erase(2+pad_l,sx-2-pad_r,4+pad_t+len(page)-offset,sy-1)
-    if len(page)-offset < sy-4:
-        write(2+pad_l,sy-1," "*linew)
-    sys.stdout.flush()
-'''
-def writePage():
-    global page, sx, offset
-    erase(2+pad_l,sx-1-pad_r,4+pad_t,sy-1-pad_b)
     for i in range(offset,min(len(page),sy-4+offset-pad_t-pad_b)):
+        # Instead of clearing the canvas and redrawing, we
+        # clear and redraw line by line. Not a perfect solution,
+        # but it is not buggy and significantly reduces flickering.
+        write(2+pad_l,4+i-offset+pad_t," "*linew)
         write(2+pad_l,4+i-offset+pad_t,page[i])
+    if len(page)-offset < sy-4-pad_b:
+        write(2+pad_l,sy-1-pad_b," "*linew)
+    updateRowCounter()
     sys.stdout.flush()
 
 ''' MAIN '''
