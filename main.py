@@ -194,6 +194,8 @@ def makePage(page):
             newpage.append(line)
     return newpage
 
+# experimental version. sometimes breaks.
+'''
 def writePage():
     global page, sx, offset
     linew = sx-pad_r-pad_l-2 # Width of the drawing area
@@ -205,6 +207,13 @@ def writePage():
     #erase(2+pad_l,sx-2-pad_r,4+pad_t+len(page)-offset,sy-1)
     if len(page)-offset < sy-4:
         write(2+pad_l,sy-1," "*linew)
+    sys.stdout.flush()
+'''
+def writePage():
+    global page, sx, offset
+    erase(2+pad_l,sx-1-pad_r,4+pad_t,sy-1)
+    for i in range(offset,min(len(page),sy-4+offset-pad_t)):
+        write(2+pad_l,4+i-offset+pad_t,page[i])
     sys.stdout.flush()
 
 ''' MAIN '''
