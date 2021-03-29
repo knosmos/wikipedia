@@ -141,7 +141,7 @@ def keyInput(keyObj):
         offset = max(0,offset-1)
         writePage()
     if key == "down":
-        offset += 1
+        offset = min(len(page),offset+1)
         writePage()
     drawQuery()
 
@@ -198,7 +198,7 @@ def writePage():
         # to the end of each line to clear out any text that might have
         # been there before. This significantly reduces flickering.
         write(2+pad_l,4+i-offset+pad_t,page[i]+" "*(linew-len(page[i])))
-    erase(2+pad_l,sx-1-pad_r,4+pad_t+len(page)-offset,sy-1)
+    erase(2+pad_l,sx-2-pad_r,4+pad_t+len(page)-offset,sy-1)
     sys.stdout.flush()
 
 ''' MAIN '''
