@@ -150,7 +150,6 @@ def keyInput(keyObj):
         queryStr += key
     if key == "enter":
         if len(queryStr): # Check if there is actually a query
-            queryStr = " ".join([i.capitalize() for i in queryStr.split()]) # capitalize, because some queries don't work when lowercase
             getPage() # Send request to wikipedia
             mostRecentQuery = queryStr
             queryStr = ""
@@ -185,10 +184,12 @@ def getPage():
     except wikipedia.exceptions.DisambiguationError as e: # Show disabiguation page
         rawpage = colors.WARNING+queryStr+" may refer to:"+colors.ENDC+"\n"+"\n".join(e.options)
     except wikipedia.exceptions.PageError:
-        rawpage = "No pages found for '%s'. Try a different query." %(queryStr)
+        rawpage = "No pages found for '%s'. Check your capitalization, or try a different query." %(queryStr)
     
     # Add color to headings
-    rawpage = rawpage.replace(" ==="," ==="+colors.ENDC)
+    rawpage = rawpage.replace(" ===="," ===="+colors.ENDC)
+    rawpage = rawpage.replace("==== ",colors.FAIL+"==== ")  
+    rawpage = rawpage.replace(" === "," === "+colors.ENDC)
     rawpage = rawpage.replace("=== ",colors.FAIL+"=== ")     
     rawpage = rawpage.replace(" == "," == "+colors.ENDC)
     rawpage = rawpage.replace("== ",colors.FAIL+"== ")
