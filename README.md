@@ -1,8 +1,8 @@
 # wikipedia
 Command-line Wikipedia viewer using Python
 
-![wiki-demo](https://user-images.githubusercontent.com/30610197/112763960-97f22680-8fd4-11eb-9bdd-b3e6a3067224.gif)
+![ezgif com-gif-maker (1) (1)](https://user-images.githubusercontent.com/30610197/113373932-efc4c080-9339-11eb-9c19-7f0746c2bc91.gif)
 
-## Requirements
+## Dependencies
 - `keyboard` library
 - `wikipedia` library
